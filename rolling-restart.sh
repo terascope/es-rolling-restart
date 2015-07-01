@@ -54,6 +54,7 @@ IFS=$'\r\n' GLOBIGNORE='*' :; NODES=($(< $NODE_FILE))
 
 # Loop through the list
 for NODE in ${NODES[@]}; do
+    export NODE
     echo ">>>>>> Restarting ${NODE}"
 
     STATUS=""
@@ -100,7 +101,7 @@ for NODE in ${NODES[@]}; do
     done
 
     # Perform changes to the node
-    echo ">>>>>> Running updates on $node"
+    echo ">>>>>> Running updates on ${NODE}"
     
     eval $SCRIPT
     result=$?
@@ -129,16 +130,12 @@ for NODE in ${NODES[@]}; do
 
     sleep 5
 
-    #echo ">>>>>> Re-applying routing configuration"
-    #/app/bin/reapply_routing
-
     echo ">>>>>> Re-enabling routing allocation"
     # re-enable routing allocation
     STATUS=`curl -sS -XPUT ${MASTER}/_cluster/settings -d '{ "transient" : { "cluster.routing.allocation.enable" : "all" } }'`
 
     if ! [[ "$STATUS" =~ (\"acknowledged\":true) ]] ; then       
-        echo "Failed acknowledge of allocation enable for $node"
-        continue
+        echo "Failed acknowledge of allocation enable for ${NODE}. Will try again."
     fi
     
     sleep 15
@@ -148,8 +145,7 @@ for NODE in ${NODES[@]}; do
     STATUS=`curl -sS -XPUT ${MASTER}/_cluster/settings -d '{ "transient" : { "cluster.routing.allocation.enable" : "all" } }'`
 
     if ! [[ "$STATUS" =~ (\"acknowledged\":true) ]] ; then       
-        echo "Failed acknowledge of allocation enable for $node"
-        continue
+        echo "Failed acknowledge of allocation enable for ${NODE}. Continuing but manual intervention may be required."
     fi
 
     echo ">>>>>> Waiting for green cluster status"
@@ -173,6 +169,6 @@ for NODE in ${NODES[@]}; do
         sleep 1
     done
 
-    echo ">>>>>> Node $node restarted"
+    echo ">>>>>> Node ${NODE} restarted"
 done
 
