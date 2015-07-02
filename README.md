@@ -14,7 +14,9 @@ This is a simple script to do a controlled rolling restart of a multinode elasti
 
 ### NODE_FILE
 
-The node file is a list of node names (including HTTP port) one per line. 
+The node file is a list of node names (including HTTP port) one per line. These should only be nodes that contain data and the node list should not contain the host you're using as the master node.
+
+NOTE: If you have dedicated master nodes, don't include them in the list. This script's primary purpose is to manage shard allocation which isn't necessary when restarting a dedicated master node. 
 
 ```
 node1.example.com:9200
@@ -49,3 +51,4 @@ exit 0
 
 * The node provided as the master node should not occur in the list of nodes. To restart that node a second run would be required with it as the only node in the list and using a different node as the master.
 * The script disables/enables shard allocation as it runs. If the script is interrupted while it's running shard allocation may remain disabled and should be re-enabled manually.
+* If you have dedicated master nodes (and if you have enough nodes to need this script, you should) you need to restart those via a different mechanism.
