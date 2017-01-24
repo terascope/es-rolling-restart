@@ -88,10 +88,11 @@ for NODE in ${NODES[@]}; do
         sleep 1
     done
 
-    # if green, disable routing allocation
+    # if green, disable routing allocation for everything except newly
+    # created primary shards
 
     echo ">>>>>> Disabling routing allocation"
-    STATUS=`curl -XPUT -sS $MASTER/_cluster/settings -d '{ "transient" : { "cluster.routing.allocation.enable" : "none" } }'`
+    STATUS=`curl -XPUT -sS $MASTER/_cluster/settings -d '{ "transient" : { "cluster.routing.allocation.enable" : "new_primaries" } }'`
 
     if ! [[ "$STATUS" =~ (\"acknowledged\":true) ]] ; then
         echo "Failed acknowledge of allocation disable for ${NODE}"
