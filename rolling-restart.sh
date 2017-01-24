@@ -68,6 +68,18 @@ do
     fi
 done
 
+# Test that files to be called with eval in in the path or have full or
+# relative paths specified
+for file in $SCRIPT $SHUTDOWN_SCRIPT
+do
+    path_to_file=$(which ${file})
+    if [ "$path_to_file" == "" ]; then
+        echo "File not found: $file"
+	echo "Perhaps you need to prepend ./ to the filename."
+        exit -1
+    fi
+done
+
 # Read the list of nodes into an array.
 IFS=$'\r\n' GLOBIGNORE='*' :; NODES=($(< $NODE_FILE))
 
