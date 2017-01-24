@@ -4,9 +4,14 @@
 #   -m - MASTER - The master node to use for coordinating the update.
 #   -n - NODE_FILE - A file containing the list of node hostnames one per line.
 #   -s SCRIPT - Script to run on each node to process the update. Script will have access to $MASTER and $NODE
+#   -d SHUTDOWN_SCRIPT - Script to run to stop elasticsearch node.
 
-while getopts ":m:n:s:h" opt; do
+while getopts ":d:m:n:s:h" opt; do
     case $opt in
+        d)
+            SHUTDOWN_SCRIPT=${OPTARG}
+            echo "Shutdown script $SHUTDOWN_SCRIPT will be run for each node" >&2
+            ;;
         m)
             export MASTER=${OPTARG}
             echo "Using master node: $MASTER" >&2
@@ -49,13 +54,30 @@ if [ -z $SCRIPT ]; then
     exit -1
 fi
 
+if [ -z $SHUTDOWN_SCRIPT ]; then
+    echo "Path to the shutdown script must be provided ex: -d /path/to/shutdown_script.sh"
+    exit -1
+fi
+
+# Test for existance of required files.
+for file in $NODE_FILE $SCRIPT $SHUTDOWN_SCRIPT
+do
+    if [ ! -f $file ]; then
+        echo "File not found: $file"
+        exit -1
+    fi
+done
+
 # Read the list of nodes into an array.
 IFS=$'\r\n' GLOBIGNORE='*' :; NODES=($(< $NODE_FILE))
 
 # Loop through the list
 for NODE in ${NODES[@]}; do
     export NODE
-    echo ">>>>>> Restarting ${NODE}"
+    export HOST=${NODE%%:*}  # keep everything before the ':', hostname
+    export PORT=${NODE##*:}  # keep everything after the ':', port number
+
+    echo ">>>>>> Restarting ${NODE} at $(date)"
 
     STATUS=""
     echo ">>>>>> Verifying green cluster status"
@@ -76,10 +98,16 @@ for NODE in ${NODES[@]}; do
         continue
     fi
 
-    # talk directly to the node and request shutdown.
+    # Run the specified SHUTDOWN_SCRIPT to request shutdown of NODE.
 
-    echo ">>>>>> Requesting node shutdown for ${NODE}"
-    STATUS=`curl -XPOST -sS "http://${NODE}/_cluster/nodes/_local/_shutdown"`
+    echo ">>>>>> Running shutdown script for ${NODE}"
+
+    eval $SHUTDOWN_SCRIPT
+    result=$?
+    if [ $result != 0 ]; then
+        printf ">>>>>> Error: [%d] when executing command: '$SHUTDOWN_SCRIPT' for node $NODE" $result
+	exit -1
+    fi
 
     # wait for the node to stop
     echo ">>>>>> Waiting for node to stop."
@@ -112,7 +140,7 @@ for NODE in ${NODES[@]}; do
     echo ">>>>>> Waiting for node ${NODE} to respond after restart. Connection refused messages expected."
     # verify node respond
     STATUS=""
-    while ! [[ "$STATUS" =~ (\"status\" : 200) ]];
+    while ! [[ "$STATUS" =~ (\"tagline\" : \"You Know, for Search\") ]];
     do
         echo "fetching http://${NODE}/"
         STATUS=`curl -sS -XGET http://${NODE}/`
@@ -169,5 +197,5 @@ for NODE in ${NODES[@]}; do
         sleep 1
     done
 
-    echo ">>>>>> Node ${NODE} restarted"
+    echo ">>>>>> Node ${NODE} restart completed at $(date)"
 done
