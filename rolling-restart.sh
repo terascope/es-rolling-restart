@@ -169,7 +169,15 @@ for NODE in ${NODES[@]}; do
         sleep 1
     done
 
-    sleep 5
+    # We've had problems on larger clusters with nodes behaving as if routing
+    # was re-enabled before the node was fully joined to the cluster (e.g.
+    # the shards were vacated from the node when the should not have been)
+    # This has led us to believe that the check for cluster yellow on the node
+    # is not truly sufficient to ensure the shards won't be reallocated.
+    # in ES 2.X and 5.X we have been unable to find an API endpoint that will
+    # provide us with a better indication of node availability, so we sleep
+    # longer.
+    sleep 60
 
     echo ">>>>>> Re-enabling routing allocation"
     # re-enable routing allocation
