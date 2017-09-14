@@ -6,7 +6,7 @@ This is a simple script to do a controlled rolling restart of a multinode elasti
 
 * -m - MASTER - The master node to use for coordinating the update.
 * -n - NODE_FILE - A file containing the list of node hostnames one per line.
-* -s - SCRIPT - Script to run on each node to process the update. 
+* -s - SCRIPT - Script to run on each node to process the update.
 
 ```
 # ./rolling-restart.sh -m master1.example.com:9200 -n ./node-list.txt -s ./node-update.sh
@@ -14,14 +14,14 @@ This is a simple script to do a controlled rolling restart of a multinode elasti
 
 ### NODE_FILE
 
-The node file is a list of node names (including HTTP port) one per line. These should only be nodes that contain data and the node list should not contain the host you're using as the master node.
+The node file is a list of node names (including HTTP port) one per line. These should only be nodes that contain data and the node list should not contain the host you're using as the master node.  Each line in the node file can contain a comma delimted list of paramaters to pass in to the startup and shutdown scripts.
 
-NOTE: If you have dedicated master nodes, don't include them in the list. This script's primary purpose is to manage shard allocation which isn't necessary when restarting a dedicated master node. 
+NOTE: If you have dedicated master nodes, don't include them in the list. This script's primary purpose is to manage shard allocation which isn't necessary when restarting a dedicated master node.
 
 ```
-node1.example.com:9200
-node2.example.com:9200
-node3.example.com:9200
+node1.example.com:9200,cluster1,elasticsearch,elasticsearch_cluster1_dev
+node2.example.com:9200,cluster1,elasticsearch,elasticsearch_cluster1_dev
+node3.example.com:9200,cluster1,elasticsearch,elasticsearch_cluster1_dev
 ```
 
 ### SCRIPT
@@ -30,18 +30,36 @@ The script should contain the actions to perform on the stopped node. This assum
 
 When the script runs the Elasticsearch instance on the node will already be stopped. It is the script's responsibility to restart it once updates are complete.
 
-Two variables are made available to the script.
+The comma seperated list for a single node from the node_file is passed into the scirpt as an argument.
 
-* $MASTER is the master node as provided on the command line.
-* $NODE is the name of the node being restarted. This name will include the port.
-
+Example Script:  
 ```
 #!/bin/bash
-echo "Running updates on $NODE"
+
+# Example script to restart an elasticsearch node
+set -e
+set -u
+
+# read in parameters from file
+IFS=',' read -r -a PARMS <<< "$1"
+NODE=${PARMS}
+HOST=${PARMS[0]%%:*}  # keep everything before the ':', hostname
+PORT=${PARMS[0]##*:}  # keep everything after the ':', port number
+CLUSTER=${PARMS[1]}
+SERVICE=${PARMS[2]}
+SERVICE_NAME=${PARMS[3]}
+
+echo "Running updates on ${NODE}"
+echo "Host: ${HOST}"
+echo "Port: ${PORT}"
+echo "Cluster: ${CLUSTER}"
+echo "Service: ${SERVICE}"
+echo "Service Name: ${SERVICE_NAME}"
+
 
 # Whatever commands are required should go here.
 
-# Those commands should include starting the elasticsearch 
+# Those commands should include starting the elasticsearch
 # instance once updates are complete.
 
 exit 0
