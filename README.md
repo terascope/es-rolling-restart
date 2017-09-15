@@ -14,7 +14,7 @@ This is a simple script to do a controlled rolling restart of a multinode elasti
 
 ### NODE_FILE
 
-The node file is a list of node names (including HTTP port) one per line. These should only be nodes that contain data and the node list should not contain the host you're using as the master node.  Each line in the node file can contain a comma delimted list of paramaters to pass in to the startup and shutdown scripts.
+The node file is a list of node names (including HTTP port) one per line. These should only be nodes that contain data and the node list should not contain the host you're using as the master node.  Each line in the node file can optionally contain a comma delimted list of paramaters to pass in to the startup and shutdown scripts.
 
 NOTE: If you have dedicated master nodes, don't include them in the list. This script's primary purpose is to manage shard allocation which isn't necessary when restarting a dedicated master node.
 
@@ -39,6 +39,13 @@ The script should contain the actions to perform on the stopped node. This assum
 When the script runs the Elasticsearch instance on the node will already be stopped. It is the script's responsibility to restart it once updates are complete.
 
 The comma seperated list for a single node from the node_file is passed into the script as an argument.
+
+Four variables are made available to the script.
+
+* $MASTER is the master node as provided on the command line.
+* $NODE is the name of the node being restarted. This name will include the port.
+* $HOST is the node hostname
+* $PORT is the node port
 
 Example simple example:
 ```
