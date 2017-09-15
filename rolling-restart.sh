@@ -86,6 +86,9 @@ IFS=$'\r\n' GLOBIGNORE='*' :; NODES=($(< $NODE_FILE))
 # Loop through the list
 for NODE_CFG in ${NODES[@]}; do
     NODE=${NODE_CFG%%,*}
+    export NODE
+    export HOST=${NODE%%:*}  # keep everything before the ':', hostname
+    export PORT=${NODE##*:}  # keep everything after the ':', port number
 
     echo ">>>>>> Restarting ${NODE} at $(date)"
 
