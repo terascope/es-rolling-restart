@@ -96,7 +96,7 @@ for NODE in ${NODES[@]}; do
     while [ -z "$STATUS" ];
     do
         # verify cluster is green
-        STATUS=`curl -sS -XGET $MASTER/_cat/health | grep green`
+        STATUS=`curl -sS -XGET $MASTER/_cat/health | cut -f 4 -d ' ' | grep green`
         sleep 1
     done
 
@@ -137,7 +137,7 @@ for NODE in ${NODES[@]}; do
     STATUS=""
     while [ -z "$STATUS" ];
     do
-        STATUS=`curl -sS -XGET $MASTER/_cat/health | grep yellow`
+        STATUS=`curl -sS -XGET $MASTER/_cat/health | cut -f 4 -d ' ' | grep yellow`
         sleep 1
     done
 
@@ -165,7 +165,7 @@ for NODE in ${NODES[@]}; do
     STATUS=""
     while [ -z "$STATUS" ];
     do
-        STATUS=`curl -sS -XGET http://${NODE}/_cat/health | grep yellow`
+        STATUS=`curl -sS -XGET http://${NODE}/_cat/health | cut -f 4 -d ' ' | grep yellow`
         sleep 1
     done
 
@@ -205,7 +205,7 @@ for NODE in ${NODES[@]}; do
     while [ -z "$STATUS" ];
     do
         # verify cluster is green
-        STATUS=`curl -sS -XGET ${MASTER}/_cat/health | grep green`
+        STATUS=`curl -sS -XGET ${MASTER}/_cat/health | cut -f 4 -d ' '| grep green`
         COUNT=$((COUNT + 1))
         if [ $COUNT -gt 60 ]  && [ $ITERATIONS -lt 5 ]; then
             echo ">>>>>> Still waiting. verifying routing allocation enabled."
