@@ -84,7 +84,8 @@ done
 IFS=$'\r\n' GLOBIGNORE='*' :; NODES=($(< $NODE_FILE))
 
 # Loop through the list
-for NODE in ${NODES[@]}; do
+for NODE_CFG in ${NODES[@]}; do
+    NODE=${NODE_CFG%%,*}
     export NODE
     export HOST=${NODE%%:*}  # keep everything before the ':', hostname
     export PORT=${NODE##*:}  # keep everything after the ':', port number
@@ -115,7 +116,7 @@ for NODE in ${NODES[@]}; do
 
     echo ">>>>>> Running shutdown script for ${NODE}"
 
-    eval $SHUTDOWN_SCRIPT
+    eval $SHUTDOWN_SCRIPT $NODE_CFG
     result=$?
     if [ $result != 0 ]; then
         printf ">>>>>> Error: [%d] when executing command: '$SHUTDOWN_SCRIPT' for node $NODE" $result
@@ -144,7 +145,7 @@ for NODE in ${NODES[@]}; do
     # Perform changes to the node
     echo ">>>>>> Running updates on ${NODE}"
 
-    eval $SCRIPT
+    eval $SCRIPT $NODE_CFG
     result=$?
     if [ $result != 0 ]; then
         printf ">>>>>> Error: [%d] when executing command: '$SCRIPT' on node $NODE" $result
